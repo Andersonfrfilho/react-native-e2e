@@ -28,8 +28,13 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 2.7
-          bundler-cache: true
+          ruby-version: 3.2
+
+      - name: Force upgrade Bundler to v2
+        run: |
+          gem uninstall bundler -a -x || true
+          gem install bundler:2.3.26
+          bundle _2.3.26_ install
 
       - name: Cache CocoaPods
         id: cache-cocoapods
