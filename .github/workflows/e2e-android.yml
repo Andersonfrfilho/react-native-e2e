@@ -27,6 +27,13 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: latest
+
+      - name: Install latest emulator
+        run: |
+          echo "y" | sdkmanager --install "emulator" --channel=0
+          sdkmanager --list | grep emulator
 
       - name: Cache AVD
         id: avd-cache
@@ -45,27 +52,9 @@ jobs:
           arch: x86
           profile: pixel_3a
           target: google_apis
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 4096
+          avd-name: Pixel_3a_API_30_x86
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 6144 -cores 2
           disable-animations: true
-          script: |
-            echo "Generated AVD snapshot for caching."
-            adb wait-for-device
-            timeout 600 adb shell getprop sys.boot_completed | grep -m 1 '1' || {
-              echo "Emulator failed to boot within 600 seconds"
-              exit 1
-            }
-
-      - name: Run tests on emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          arch: x86
-          profile: pixel_3a
-          target: google_apis
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 4096
-          disable-animations: true
-          emulator-boot-timeout: 900
-          emulator-build: 15369324 # Latest stable emulator build as of 2025
           script: |
             adb kill-server
             adb start-server
@@ -74,10 +63,33 @@ jobs:
               echo "Emulator failed to boot within 900 seconds"
               exit 1
             }
+            echo "Generated AVD snapshot for caching."
+
+      - name: Run tests on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86
+          profile: pixel_3a
+          target: google_apis
+          avd-name: Pixel_3a_API_30_x86
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 6144 -cores 2
+          disable-animations: true
+          emulator-boot-timeout: 1200
+          script: |
+            adb kill-server
+            adb start-server
+            adb wait-for-device
+            timeout 1200 adb shell getprop sys.boot_completed | grep -m 1 '1' || {
+              echo "Emulator failed to boot within 1200 seconds"
+              exit 1
+            }
+            adb logcat -c
+            adb logcat *:E > logcat.log 2>&1 &
             npx detox build --configuration android.emu.release
-            npx detox test --configuration android.emu.release --headless --record-logs all --max-workers 2 --logcat || {
+            npx detox test --configuration android.emu.release --headless --record-logs all --max-workers 1 --logcat || {
               echo "Retrying Detox tests..."
-              npx detox test --configuration android.emu.release --headless --record-logs all --max-workers 2 --logcat
+              npx detox test --configuration android.emu.release --headless --record-logs all --max-workers 1 --logcat
             }
 
       - name: Upload test artifacts
