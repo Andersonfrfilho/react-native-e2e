@@ -1,89 +1,9 @@
 name: e2e-android
 on: push
 
-# jobs:
-#   e2e-android:
-#     runs-on: macos-13
-
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v3
-
-#       - name: Setup Node.js
-#         uses: actions/setup-node@v4
-#         with:
-#           node-version: 18.x
-#           cache: npm
-
-#       - name: Install dependencies
-#         run: npm install --frozen-lockfile --prefer-offline
-
-#       - name: Setup Java
-#         uses: actions/setup-java@v3
-#         with:
-#           distribution: temurin
-#           java-version: 17
-#           cache: gradle
-
-#       - name: Setup Android SDK
-#         uses: android-actions/setup-android@v3
-
-#       - name: Cache AVD
-#         id: avd-cache
-#         uses: actions/cache@v3
-#         with:
-#           path: |
-#             ~/.android/avd/*
-#             ~/.android/adb*
-#           key: avd-${{ runner.os }}-api31-x86_64
-
-#       - name: Create AVD and generate snapshot
-#         if: steps.avd-cache.outputs.cache-hit != 'true'
-#         uses: reactivecircus/android-emulator-runner@v2
-#         with:
-#           api-level: 31
-#           arch: x86_64
-#           profile: pixel_5
-#           target: google_apis
-#           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-#           disable-animations: true
-#           script: echo "Generated AVD snapshot for caching."
-
-#       - name: Run tests on emulator
-#         uses: reactivecircus/android-emulator-runner@v2
-#         with:
-#           api-level: 31
-#           arch: x86_64
-#           profile: pixel_5
-#           target: google_apis
-#           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-#           disable-animations: true
-#           emulator-boot-timeout: 600
-#           script: |
-#             adb wait-for-device
-#             timeout 600 adb shell getprop sys.boot_completed | grep -m 1 '1' || {
-#               echo "Emulator failed to boot within 600 seconds"
-#               exit 1
-#             }
-#             npx detox build --configuration android.emu.release
-#             npx detox test --configuration android.emu.release --headless --record-logs all --max-workers 2 || {
-#               echo "Retrying Detox tests..."
-#               npx detox test --configuration android.emu.release --headless --record-logs all --max-workers 2
-#             }
-
-#       - name: Upload test artifacts
-#         if: failure()
-#         uses: actions/upload-artifact@v4
-#         with:
-#           name: test-reports
-#           path: |
-#             **/build/reports/**
-#             **/detox.log
-
-# Alternative configuration for macos-latest-xlarge with arm64-v8a (uncomment to use, if available)
 jobs:
   e2e-android:
-    runs-on: macos-latest-xlarge
+    runs-on: macos-13
 
     steps:
       - name: Checkout repository
@@ -115,40 +35,49 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ runner.os }}-api31-arm64-v8a
+          key: avd-${{ runner.os }}-api30-x86
 
       - name: Create AVD and generate snapshot
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 31
-          arch: arm64-v8a
-          profile: pixel_5
+          api-level: 30
+          arch: x86
+          profile: pixel_3a
           target: google_apis
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 4096
           disable-animations: true
-          script: echo "Generated AVD snapshot for caching."
-
-      - name: Run tests on emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 31
-          arch: arm64-v8a
-          profile: pixel_5
-          target: google_apis
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          disable-animations: true
-          emulator-boot-timeout: 600
           script: |
+            echo "Generated AVD snapshot for caching."
             adb wait-for-device
             timeout 600 adb shell getprop sys.boot_completed | grep -m 1 '1' || {
               echo "Emulator failed to boot within 600 seconds"
               exit 1
             }
+
+      - name: Run tests on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86
+          profile: pixel_3a
+          target: google_apis
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 4096
+          disable-animations: true
+          emulator-boot-timeout: 900
+          emulator-build: 15369324 # Latest stable emulator build as of 2025
+          script: |
+            adb kill-server
+            adb start-server
+            adb wait-for-device
+            timeout 900 adb shell getprop sys.boot_completed | grep -m 1 '1' || {
+              echo "Emulator failed to boot within 900 seconds"
+              exit 1
+            }
             npx detox build --configuration android.emu.release
-            npx detox test --configuration android.emu.release --headless --record-logs all --max-workers 2 || {
+            npx detox test --configuration android.emu.release --headless --record-logs all --max-workers 2 --logcat || {
               echo "Retrying Detox tests..."
-              npx detox test --configuration android.emu.release --headless --record-logs all --max-workers 2
+              npx detox test --configuration android.emu.release --headless --record-logs all --max-workers 2 --logcat
             }
 
       - name: Upload test artifacts
@@ -159,3 +88,4 @@ jobs:
           path: |
             **/build/reports/**
             **/detox.log
+            **/logcat.log
