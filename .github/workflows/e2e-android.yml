@@ -3,110 +3,33 @@ on: push
 
 jobs:
   e2e-android:
-    runs-on: macos-13
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18.x
-          cache: npm
 
       - name: Install dependencies
-        run: npm install --frozen-lockfile --prefer-offline
+        run: npm install
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 17
-          cache: gradle
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: latest
-
-      - name: Install latest emulator
-        run: |
-          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "emulator" --channel=0
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --list | grep emulator
-          emulator -version
-
-      - name: Cache AVD
-        id: avd-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-${{ runner.os }}-api30-x86-v2 # Updated key to force fresh cache
-
-      - name: Create AVD and generate snapshot
-        if: steps.avd-cache.outputs.cache-hit != 'true'
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          arch: x86
-          profile: pixel_3a
-          target: google_apis
-          avd-name: Pixel_3a_API_30_x86
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 4096 -cores 1 -no-snapshot-load
-          disable-animations: true
-          script: |
-            adb kill-server
-            adb start-server
-            # Check for ADB port conflicts
-            netstat -an | grep 5037 || echo "No process using port 5037"
-            adb wait-for-device
-            timeout 1200 adb shell getprop sys.boot_completed | grep -m 1 '1' || {
-              echo "Emulator failed to boot within 1200 seconds"
-              adb logcat -d > boot_failure.log
-              exit 1
-            }
-            adb shell input keyevent 82 # Unlock device to ensure boot completion
-            echo "Generated AVD snapshot for caching."
 
       - name: Run tests on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 30
-          arch: x86
-          profile: pixel_3a
+          api-level: 31
+          arch: x86_64
+          profile: pixel_5
           target: google_apis
-          avd-name: Pixel_3a_API_30_x86
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 4096 -cores 1
-          disable-animations: true
-          emulator-boot-timeout: 1800
           script: |
-            adb kill-server
-            adb start-server
-            netstat -an | grep 5037 || echo "No process using port 5037"
-            adb wait-for-device
-            timeout 1800 adb shell getprop sys.boot_completed | grep -m 1 '1' || {
-              echo "Emulator failed to boot within 1800 seconds"
-              adb logcat -d > boot_failure.log
-              exit 1
-            }
-            adb shell input keyevent 82 # Unlock device
-            adb logcat -c
-            adb logcat *:E > logcat.log 2>&1 &
             npx detox build --configuration android.emu.release
-            npx detox test --configuration android.emu.release --headless --record-logs all --max-workers 1 --logcat --retry-on-error || {
-              echo "Retrying Detox tests..."
-              npx detox test --configuration android.emu.release --headless --record-logs all --max-workers 1 --logcat --retry-on-error
-            }
-
-      - name: Upload test artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-reports
-          path: |
-            **/build/reports/**
-            **/detox.log
-            **/logcat.log
-            **/boot_failure.log
+            npx detox test --configuration android.emu.release --headless --record-logs all
