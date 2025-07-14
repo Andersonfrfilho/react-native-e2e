@@ -12,7 +12,8 @@
     "detox build": "detox build",
     "detox:android:build": "detox build --configuration android.emu.debug",
     "detox rebuild-framework-cache": "detox rebuild-framework-cache",
-    "detox:android:test:ci": "detox test --configuration android.emu.debug --headless --record-logs failing --record-videos failing --take-screenshots failing"
+    "detox:android:test:ci": "detox test --configuration android.emu.debug --headless --record-logs failing --record-videos failing --take-screenshots failing",
+    "detox:start": "react-native start --reset-cache"
   },
   "dependencies": {
     "@react-native/new-app-screen": "0.80.1",
