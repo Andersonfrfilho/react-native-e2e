@@ -3,7 +3,7 @@ on: push
 
 jobs:
   e2e-android:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -20,11 +20,10 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
-          cache: gradle
           distribution: temurin
           java-version: 17
 
-      - name: Detox test (build + run)
+      - name: Run tests on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 31
@@ -33,4 +32,4 @@ jobs:
           target: google_apis
           script: |
             npx detox build --configuration android.emu.release
-            yarn detox test --configuration android.emu.release --headless --record-logs all
+            npx detox test --configuration android.emu.release --headless --record-logs all
