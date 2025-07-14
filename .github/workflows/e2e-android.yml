@@ -24,25 +24,15 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Cache Detox build
-        id: cache-detox-build
-        uses: actions/cache@v3
-        with:
-          path: android/app/build
-          key: ${{ runner.os }}-detox-build
-          restore-keys: |
-            ${{ runner.os }}-detox-build
-
-      - name: Detox build
-        run: npx detox build --configuration android.emu.release
-
-      - name: Detox test
+      - name: Detox test (build + run)
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 31
           arch: x86_64
           profile: Nexus 6
-          script: yarn detox test --configuration android.emu.release --headless --record-logs all
+          script: |
+            npx detox build --configuration android.emu.release
+            yarn detox test --configuration android.emu.release --headless --record-logs all
 
       - name: Upload artifacts
         if: failure()
