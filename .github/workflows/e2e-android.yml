@@ -32,4 +32,12 @@ jobs:
           target: google_apis
           script: |
             npx detox build --configuration android.emu.release
+
+            # Aguarda o ADB reconhecer o dispositivo
+            adb wait-for-device
+            until adb shell getprop sys.boot_completed | grep -m 1 '1'; do
+              echo "Waiting for emulator to boot..."
+              sleep 5
+            done
+
             npx detox test --configuration android.emu.release --headless --record-logs all
