@@ -10,7 +10,8 @@
     "test": "jest",
     "detox": "detox test",
     "detox build": "detox build",
-    "detox rebuild-framework-cache": "detox rebuild-framework-cache"
+    "detox rebuild-framework-cache": "detox rebuild-framework-cache",
+    "detox:android:test:ci": "detox test --configuration android.emu.debug --headless --record-logs failing --record-videos failing --take-screenshots failing"
   },
   "dependencies": {
     "@react-native/new-app-screen": "0.80.1",
