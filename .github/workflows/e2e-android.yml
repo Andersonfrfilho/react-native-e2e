@@ -27,13 +27,12 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 31
-          arch: x86_64
+          arch: arm64-v8a
           profile: pixel_5
           target: google_apis
           script: |
             npx detox build --configuration android.emu.release
 
-            # Aguarda o ADB reconhecer o dispositivo
             adb wait-for-device
             until adb shell getprop sys.boot_completed | grep -m 1 '1'; do
               echo "Waiting for emulator to boot..."
