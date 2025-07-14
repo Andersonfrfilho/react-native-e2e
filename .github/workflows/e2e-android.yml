@@ -30,6 +30,9 @@ jobs:
           arch: x86_64
           profile: pixel_5
           target: google_apis
+          disable-animations: true
+          emulator-options: '-no-window -gpu swiftshader_indirect -no-boot-anim -accel off'
           script: |
+            adb wait-for-device
             npx detox build --configuration android.emu.release
             npx detox test --configuration android.emu.release --headless --record-logs all
