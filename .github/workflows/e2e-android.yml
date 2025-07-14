@@ -3,7 +3,7 @@ on: push
 
 jobs:
   e2e-android:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest # Change to macos-latest
 
     steps:
       - name: Checkout repository
@@ -27,7 +27,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 31
-          arch: x86_64 # Change this from arm64-v8a to x86_64
+          arch: arm64-v8a # Keep this as arm64-v8a
           profile: pixel_5
           target: google_apis
           script: |
